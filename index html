@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chrome AI Summarizer Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+        }
+        #summary {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chrome AI Summarizer Demo</h1>
+    <p>Enter text below and click "Summarize" to generate a summary using Chrome's built-in AI capabilities.</p>
+    <textarea id="inputText" placeholder="Enter text here..."></textarea>
+    <br>
+    <button id="summarizeButton">Summarize</button>
+    <div id="summary"></div>
+
+    <script>
+        document.getElementById('summarizeButton').addEventListener('click', async () => {
+            const inputText = document.getElementById('inputText').value;
+            const summaryDiv = document.getElementById('summary');
+
+            if (!inputText.trim()) {
+                summaryDiv.textContent = 'Please enter some text to summarize.';
+                return;
+            }
+
+            try {
+                // Check if the Summarizer API is available
+                const capabilities = await navigator.ai.summarizer.capabilities();
+                if (capabilities.available === 'no') {
+                    summaryDiv.textContent = 'Summarizer API is not available on this device.';
+                    return;
+                }
+
+                // Create a summarizer instance
+                const summarizer = await navigator.ai.summarizer.create({
+                    length: 'medium',
+                    type: 'paragraph',
+                    format: 'text'
+                });
+
+                // Generate the summary
+                const result = await summarizer.summarize(inputText);
+                summaryDiv.textContent = result.summary;
+            } catch (error) {
+                console.error('Error using Summarizer API:', error);
+                summaryDiv.textContent = 'An error occurred while generating the summary.';
+            }
+        });
+    </script>
+</body>
+</html>
