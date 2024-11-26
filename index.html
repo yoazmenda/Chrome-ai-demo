@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Chrome AI Summarizer Enhanced Demo</title>
+    <title>Chrome AI Summarizer Demo</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -58,15 +58,19 @@
     </style>
 </head>
 <body>
-    <h1>Chrome AI Summarizer Enhanced Demo</h1>
-    <p>Enter text below and click "Summarize" to generate a summary using Chrome's AI capabilities.</p>
-    <textarea id="inputText" placeholder="Enter text here..."></textarea>
+    <h1>Chrome AI Summarizer Demo</h1>
+    <p id="status">Checking Summarizer API availability...</p>
+    <textarea id="inputText" placeholder="Enter text here..." disabled></textarea>
     <br>
-    <button id="summarizeButton">Summarize</button>
+    <button id="summarizeButton" disabled>Summarize</button>
     <div id="summary"></div>
     <div class="log" id="logContainer"></div>
 
     <script>
+        const statusElement = document.getElementById('status');
+        const inputText = document.getElementById('inputText');
+        const summarizeButton = document.getElementById('summarizeButton');
+        const summaryDiv = document.getElementById('summary');
         const logContainer = document.getElementById('logContainer');
 
         function logMessage(message) {
@@ -76,14 +80,36 @@
             console.log(message);
         }
 
-        document.getElementById('summarizeButton').addEventListener('click', async () => {
-            const inputText = document.getElementById('inputText').value;
-            const summaryDiv = document.getElementById('summary');
-            summaryDiv.textContent = ''; // Clear the previous summary
+        async function checkSummarizerAPI() {
+            try {
+                if (!navigator.ai || !navigator.ai.summarizer) {
+                    throw new Error('Summarizer API is not available in this browser.');
+                }
+
+                const capabilities = await navigator.ai.summarizer.capabilities();
+                logMessage('Summarizer capabilities fetched successfully.');
+
+                if (capabilities.available === 'no') {
+                    throw new Error('Summarizer API is not available on this device.');
+                }
+
+                statusElement.textContent = 'Summarizer API is available. You can enter text to summarize.';
+                inputText.disabled = false;
+                summarizeButton.disabled = false;
+            } catch (error) {
+                statusElement.innerHTML = `<span class="error">${error.message}</span>`;
+                logMessage(`Error: ${error.message}`);
+                logMessage('Ensure you are using the latest version of Chrome and that experimental features are enabled.');
+            }
+        }
+
+        summarizeButton.addEventListener('click', async () => {
+            const text = inputText.value.trim();
+            summaryDiv.textContent = ''; // Clear previous summary
             logContainer.innerHTML = ''; // Clear previous logs
 
-            if (!inputText.trim()) {
-                summaryDiv.textContent = 'Please enter some text to summarize.';
+            if (!text) {
+                summaryDiv.innerHTML = '<span class="error">Please enter some text to summarize.</span>';
                 logMessage('Error: No input text provided.');
                 return;
             }
@@ -91,17 +117,6 @@
             logMessage('Attempting to use Summarizer API...');
 
             try {
-                // Check if Summarizer API is available
-                const capabilities = await navigator.ai.summarizer.capabilities();
-                logMessage('Summarizer capabilities fetched successfully.');
-
-                if (capabilities.available === 'no') {
-                    summaryDiv.innerHTML = '<span class="error">Summarizer API is not available on this device.</span>';
-                    logMessage('Error: Summarizer API is unavailable on this device.');
-                    return;
-                }
-
-                logMessage('Summarizer API is available. Creating summarizer instance...');
                 const summarizer = await navigator.ai.summarizer.create({
                     length: 'medium',
                     type: 'paragraph',
@@ -110,7 +125,7 @@
 
                 logMessage('Summarizer instance created successfully.');
                 logMessage('Processing input text for summarization...');
-                const result = await summarizer.summarize(inputText);
+                const result = await summarizer.summarize(text);
                 summaryDiv.textContent = result.summary;
 
                 logMessage('Summary generated successfully:');
@@ -122,6 +137,9 @@
                 logMessage(error.stack);
             }
         });
+
+        // Check Summarizer API availability on page load
+        window.addEventListener('load', checkSummarizerAPI);
     </script>
 </body>
 </html>
