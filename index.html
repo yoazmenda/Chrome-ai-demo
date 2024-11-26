@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Chrome AI Summarizer Demo</title>
+    <title>Chrome AI Summarizer Enhanced Demo</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,58 +11,115 @@
         textarea {
             width: 100%;
             height: 150px;
+            resize: none;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
         }
         button {
             margin-top: 10px;
             padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #999;
+            cursor: not-allowed;
+        }
+        button:hover {
+            background-color: #0056b3;
         }
         #summary {
             margin-top: 20px;
             padding: 10px;
             border: 1px solid #ccc;
+            border-radius: 5px;
             background-color: #f9f9f9;
+            white-space: pre-wrap;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .log {
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #666;
+            background: #f4f4f4;
+            padding: 10px;
+            border: 1px dashed #ccc;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
         }
     </style>
 </head>
 <body>
-    <h1>Chrome AI Summarizer Demo</h1>
-    <p>Enter text below and click "Summarize" to generate a summary using Chrome's built-in AI capabilities.</p>
+    <h1>Chrome AI Summarizer Enhanced Demo</h1>
+    <p>Enter text below and click "Summarize" to generate a summary using Chrome's AI capabilities.</p>
     <textarea id="inputText" placeholder="Enter text here..."></textarea>
     <br>
     <button id="summarizeButton">Summarize</button>
     <div id="summary"></div>
+    <div class="log" id="logContainer"></div>
 
     <script>
+        const logContainer = document.getElementById('logContainer');
+
+        function logMessage(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logContainer.innerHTML += `[${timestamp}] ${message}<br>`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+            console.log(message);
+        }
+
         document.getElementById('summarizeButton').addEventListener('click', async () => {
             const inputText = document.getElementById('inputText').value;
             const summaryDiv = document.getElementById('summary');
+            summaryDiv.textContent = ''; // Clear the previous summary
+            logContainer.innerHTML = ''; // Clear previous logs
 
             if (!inputText.trim()) {
                 summaryDiv.textContent = 'Please enter some text to summarize.';
+                logMessage('Error: No input text provided.');
                 return;
             }
 
+            logMessage('Attempting to use Summarizer API...');
+
             try {
-                // Check if the Summarizer API is available
+                // Check if Summarizer API is available
                 const capabilities = await navigator.ai.summarizer.capabilities();
+                logMessage('Summarizer capabilities fetched successfully.');
+
                 if (capabilities.available === 'no') {
-                    summaryDiv.textContent = 'Summarizer API is not available on this device.';
+                    summaryDiv.innerHTML = '<span class="error">Summarizer API is not available on this device.</span>';
+                    logMessage('Error: Summarizer API is unavailable on this device.');
                     return;
                 }
 
-                // Create a summarizer instance
+                logMessage('Summarizer API is available. Creating summarizer instance...');
                 const summarizer = await navigator.ai.summarizer.create({
                     length: 'medium',
                     type: 'paragraph',
                     format: 'text'
                 });
 
-                // Generate the summary
+                logMessage('Summarizer instance created successfully.');
+                logMessage('Processing input text for summarization...');
                 const result = await summarizer.summarize(inputText);
                 summaryDiv.textContent = result.summary;
+
+                logMessage('Summary generated successfully:');
+                logMessage(result.summary);
             } catch (error) {
-                console.error('Error using Summarizer API:', error);
-                summaryDiv.textContent = 'An error occurred while generating the summary.';
+                console.error('Error while generating summary:', error);
+                summaryDiv.innerHTML = '<span class="error">An error occurred while generating the summary. Check the logs for details.</span>';
+                logMessage(`Error: ${error.message}`);
+                logMessage(error.stack);
             }
         });
     </script>
